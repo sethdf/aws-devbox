@@ -1,6 +1,6 @@
 # AWS DevBox
 
-Terraform configuration for a reliable AWS cloud development workstation with spot pricing.
+Terraform configuration for a reliable AWS cloud development workstation with spot pricing and Tailscale access.
 
 ## Why This Configuration?
 
@@ -19,12 +19,24 @@ Terraform configuration for a reliable AWS cloud development workstation with sp
 - Faster `npm install`, `git clone`, etc.
 - Daily snapshots via DLM (7-day retention)
 
+**Security: Tailscale (no public IP)**
+- Zero exposed ports - no SSH to the internet
+- Access from anywhere via encrypted mesh VPN
+- Tailscale SSH for authentication (no keys to manage)
+
 **Spot + Hibernation**
 - Auto-hibernates on spot interruption (saves RAM state)
 - Auto-restarts when capacity returns
-- Email notifications on interruption/restart
+- CLI warnings before shutdown
 
 ## Quick Start
+
+### Prerequisites
+1. [Tailscale account](https://tailscale.com/) (free for personal use)
+2. [Tailscale auth key](https://login.tailscale.com/admin/settings/keys) - create a reusable key
+3. Tailscale installed on your local machine
+
+### Deploy
 
 ```bash
 # 1. Configure AWS credentials
@@ -34,10 +46,9 @@ export AWS_PROFILE=your-profile
 
 # 2. Create terraform.tfvars
 cat > terraform.tfvars <<EOF
-ssh_public_key     = "ssh-ed25519 AAAA... your-key"
-allowed_ssh_cidrs  = ["YOUR.IP.ADDRESS/32"]
+tailscale_auth_key = "tskey-auth-xxxxx"  # From Tailscale admin console
+notification_email = "you@example.com"   # Optional
 aws_region         = "us-east-1"
-notification_email = "you@example.com"  # optional
 EOF
 
 # 3. Deploy
@@ -45,8 +56,8 @@ terraform init
 terraform plan
 terraform apply
 
-# 4. Connect
-ssh ubuntu@$(terraform output -raw public_ip)
+# 4. Connect (via Tailscale)
+ssh devbox
 ```
 
 ## Variables
@@ -58,8 +69,8 @@ ssh ubuntu@$(terraform output -raw public_ip)
 | `volume_size` | 100 | Root volume size (GB) |
 | `volume_iops` | 3000 | gp3 IOPS |
 | `volume_throughput` | 250 | gp3 throughput (MiB/s) |
-| `ssh_public_key` | (required) | Your SSH public key |
-| `allowed_ssh_cidrs` | 0.0.0.0/0 | CIDRs allowed to SSH |
+| `tailscale_auth_key` | (required) | Tailscale auth key |
+| `tailscale_hostname` | devbox | Hostname in Tailscale |
 | `snapshot_retention_days` | 7 | Days to keep snapshots |
 | `use_spot` | true | Use spot instances (~70% savings) |
 | `spot_max_price` | "" | Max spot price (empty = on-demand cap) |
@@ -69,6 +80,40 @@ ssh ubuntu@$(terraform output -raw public_ip)
 | `schedule_start` | 0 5 * * ? * | Cron for auto-start (5am) |
 | `schedule_stop` | 0 23 * * ? * | Cron for auto-stop (11pm) |
 | `schedule_timezone` | America/Denver | Timezone for schedule (Mountain) |
+
+## Tailscale Access
+
+Once deployed, access your devbox via Tailscale:
+
+```bash
+# SSH (uses Tailscale SSH - no keys needed)
+ssh devbox
+
+# Or with explicit user
+ssh ubuntu@devbox
+```
+
+### VS Code Remote
+
+Add to `~/.ssh/config`:
+```
+Host devbox
+    HostName devbox
+```
+
+Then in VS Code: `Remote-SSH: Connect to Host...` → `devbox`
+
+### Using as Exit Node (VPN)
+
+You can route all your traffic through the devbox:
+
+```bash
+# On devbox: enable exit node
+sudo tailscale up --advertise-exit-node
+
+# On your machine: use devbox as exit node
+tailscale up --exit-node=devbox
+```
 
 ## Spot Instance Behavior
 
@@ -81,13 +126,9 @@ ssh ubuntu@$(terraform output -raw public_ip)
 
 **Interruption frequency:** m7a.xlarge typically <5% monthly
 
-**What happens on interruption:**
-```
-Spot interrupted → Auto-hibernate (2 min) → Lambda detects stopped state
-    → Attempts restart (up to 5 tries with backoff)
-    → Success: resumes from hibernation
-    → Failure: sends email notification
-```
+**CLI Warnings:**
+- Spot interruption: Wall broadcast + tmux notification
+- Scheduled shutdown: 15-min and 5-min warnings
 
 **To disable spot and use on-demand:**
 ```hcl
@@ -114,7 +155,7 @@ schedule_timezone = "America/New_York"  # Eastern
 enable_schedule = false
 ```
 
-**Working late?** Just start the instance manually - it will auto-stop at 11pm as usual, or you can stop it yourself when done.
+**Working late?** Just keep working. It'll hibernate at 11pm, you manually start it if needed.
 
 ## What's Installed
 
@@ -159,19 +200,6 @@ enable_schedule = false
 | Az | PowerShell module for Azure |
 | ExchangeOnlineManagement | Exchange Online admin |
 | MicrosoftTeams | Teams admin |
-
-## VS Code Remote Setup
-
-Add to `~/.ssh/config`:
-
-```
-Host devbox
-    HostName <elastic-ip>
-    User ubuntu
-    IdentityFile ~/.ssh/your-key
-```
-
-Then in VS Code: `Remote-SSH: Connect to Host...` → `devbox`
 
 ## Cloud Authentication
 

@@ -38,7 +38,11 @@ usermod -aG docker ubuntu
 # 4. Install Docker Compose plugin
 apt-get install -y docker-compose-plugin
 
-# 5. Install AWS CLI v2
+# 5. Install and configure Tailscale
+curl -fsSL https://tailscale.com/install.sh | sh
+tailscale up --auth-key=${tailscale_auth_key} --hostname=${tailscale_hostname} --ssh
+
+# 6. Install AWS CLI v2
 curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
 unzip -q /tmp/awscliv2.zip -d /tmp
 /tmp/aws/install

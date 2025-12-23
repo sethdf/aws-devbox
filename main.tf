@@ -78,19 +78,12 @@ resource "aws_route_table_association" "devbox" {
 
 resource "aws_security_group" "devbox" {
   name        = "devbox-sg"
-  description = "Security group for devbox instance"
+  description = "Security group for devbox instance - no public ingress, Tailscale handles access"
   vpc_id      = aws_vpc.devbox.id
 
-  # SSH access
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = var.allowed_ssh_cidrs
-  }
+  # No ingress rules - Tailscale handles all access via encrypted tunnel
 
-  # Allow all outbound traffic
+  # Allow all outbound traffic (needed for Tailscale, package updates, etc.)
   egress {
     from_port   = 0
     to_port     = 0
@@ -104,22 +97,12 @@ resource "aws_security_group" "devbox" {
 }
 
 # -----------------------------------------------------------------------------
-# SSH Key Pair
-# -----------------------------------------------------------------------------
-
-resource "aws_key_pair" "devbox" {
-  key_name   = "devbox-key"
-  public_key = var.ssh_public_key
-}
-
-# -----------------------------------------------------------------------------
 # EC2 Instance
 # -----------------------------------------------------------------------------
 
 resource "aws_instance" "devbox" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.instance_type
-  key_name               = aws_key_pair.devbox.key_name
   subnet_id              = aws_subnet.devbox.id
   vpc_security_group_ids = [aws_security_group.devbox.id]
 
@@ -154,8 +137,10 @@ resource "aws_instance" "devbox" {
   }
 
   user_data = templatefile("${path.module}/scripts/user-data.sh", {
-    hostname = var.hostname
-    timezone = var.schedule_timezone
+    hostname           = var.hostname
+    timezone           = var.schedule_timezone
+    tailscale_auth_key = var.tailscale_auth_key
+    tailscale_hostname = var.tailscale_hostname
   })
 
   # Don't recreate instance if user-data changes
@@ -165,19 +150,6 @@ resource "aws_instance" "devbox" {
 
   tags = {
     Name = var.hostname
-  }
-}
-
-# -----------------------------------------------------------------------------
-# Elastic IP (static address)
-# -----------------------------------------------------------------------------
-
-resource "aws_eip" "devbox" {
-  instance = aws_instance.devbox.id
-  domain   = "vpc"
-
-  tags = {
-    Name = "devbox-eip"
   }
 }
 

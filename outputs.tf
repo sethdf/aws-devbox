@@ -3,23 +3,21 @@ output "instance_id" {
   value       = aws_instance.devbox.id
 }
 
-output "public_ip" {
-  description = "Elastic IP address (static)"
-  value       = aws_eip.devbox.public_ip
+output "tailscale_hostname" {
+  description = "Tailscale hostname for SSH access"
+  value       = var.tailscale_hostname
 }
 
 output "ssh_command" {
-  description = "SSH command to connect"
-  value       = "ssh ubuntu@${aws_eip.devbox.public_ip}"
+  description = "SSH command to connect (via Tailscale)"
+  value       = "ssh ${var.tailscale_hostname}"
 }
 
 output "vscode_remote" {
   description = "VS Code Remote SSH config entry"
   value       = <<-EOT
-    Host devbox
-        HostName ${aws_eip.devbox.public_ip}
-        User ubuntu
-        IdentityFile ~/.ssh/your-key
+    Host ${var.tailscale_hostname}
+        HostName ${var.tailscale_hostname}
   EOT
 }
 

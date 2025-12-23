@@ -1,15 +1,16 @@
 # Copy this file to terraform.tfvars and fill in your values
 # cp terraform.tfvars.example terraform.tfvars
 
-# Required: Your SSH public key
-ssh_public_key = "ssh-ed25519 AAAA..."
+# Required: Tailscale auth key
+# Get from: https://login.tailscale.com/admin/settings/keys
+# Create a reusable key for convenience
+tailscale_auth_key = "tskey-auth-xxxxx"
 
-# Recommended: Restrict SSH to your IP only
-# Find your IP: curl ifconfig.me
-allowed_ssh_cidrs = ["YOUR.IP.ADDRESS/32"]
+# Optional: Tailscale hostname (default: devbox)
+# tailscale_hostname = "devbox"
 
-# Recommended: Email for spot interruption notifications
-notification_email = "you@example.com"
+# Optional: Email for spot interruption notifications
+# notification_email = "you@example.com"
 
 # Spot instances (default: enabled for ~70% cost savings)
 # use_spot              = true

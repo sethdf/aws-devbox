@@ -34,17 +34,6 @@ variable "hostname" {
   default     = "aws-dev-box"
 }
 
-variable "ssh_public_key" {
-  description = "SSH public key for access"
-  type        = string
-}
-
-variable "allowed_ssh_cidrs" {
-  description = "CIDR blocks allowed to SSH (use your IP/32 for security)"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
-}
-
 variable "snapshot_retention_days" {
   description = "Number of days to retain daily EBS snapshots"
   type        = number
@@ -97,4 +86,16 @@ variable "enable_schedule" {
   description = "Enable automatic start/stop schedule"
   type        = bool
   default     = true
+}
+
+variable "tailscale_auth_key" {
+  description = "Tailscale auth key for secure access (get from https://login.tailscale.com/admin/settings/keys)"
+  type        = string
+  sensitive   = true
+}
+
+variable "tailscale_hostname" {
+  description = "Hostname for this machine in Tailscale"
+  type        = string
+  default     = "devbox"
 }
