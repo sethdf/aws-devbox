@@ -74,3 +74,27 @@ variable "spot_restart_attempts" {
   type        = number
   default     = 5
 }
+
+variable "schedule_stop" {
+  description = "Cron expression for auto-stop (e.g., '0 23 * * ? *' for 11pm)"
+  type        = string
+  default     = "0 23 * * ? *"
+}
+
+variable "schedule_start" {
+  description = "Cron expression for auto-start (e.g., '0 5 * * ? *' for 5am)"
+  type        = string
+  default     = "0 5 * * ? *"
+}
+
+variable "schedule_timezone" {
+  description = "Timezone for schedule (e.g., 'America/Denver' for Mountain)"
+  type        = string
+  default     = "America/Denver"
+}
+
+variable "enable_schedule" {
+  description = "Enable automatic start/stop schedule"
+  type        = bool
+  default     = true
+}

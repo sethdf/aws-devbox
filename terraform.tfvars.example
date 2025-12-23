@@ -16,6 +16,12 @@ notification_email = "you@example.com"
 # spot_max_price        = ""    # Empty = on-demand price cap
 # spot_restart_attempts = 5
 
+# Schedule (default: 5am-11pm Mountain Time)
+# enable_schedule   = true
+# schedule_start    = "0 5 * * ? *"   # 5am
+# schedule_stop     = "0 23 * * ? *"  # 11pm
+# schedule_timezone = "America/Denver"
+
 # Optional overrides
 # aws_region              = "us-east-1"
 # instance_type           = "m7a.xlarge"

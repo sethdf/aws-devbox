@@ -65,6 +65,10 @@ ssh ubuntu@$(terraform output -raw public_ip)
 | `spot_max_price` | "" | Max spot price (empty = on-demand cap) |
 | `notification_email` | "" | Email for spot interruption alerts |
 | `spot_restart_attempts` | 5 | Retry attempts before giving up |
+| `enable_schedule` | true | Enable auto start/stop schedule |
+| `schedule_start` | 0 5 * * ? * | Cron for auto-start (5am) |
+| `schedule_stop` | 0 23 * * ? * | Cron for auto-stop (11pm) |
+| `schedule_timezone` | America/Denver | Timezone for schedule (Mountain) |
 
 ## Spot Instance Behavior
 
@@ -89,6 +93,28 @@ Spot interrupted → Auto-hibernate (2 min) → Lambda detects stopped state
 ```hcl
 use_spot = false
 ```
+
+## Scheduled Start/Stop
+
+By default, the instance:
+- **Hibernates at 11pm** Mountain Time (saves RAM state)
+- **Starts at 5am** Mountain Time (resumes from hibernation)
+
+This runs 18 hours/day instead of 24, saving ~25% more on top of spot savings.
+
+**To customize the schedule:**
+```hcl
+schedule_start    = "0 6 * * ? *"   # 6am
+schedule_stop     = "0 22 * * ? *"  # 10pm
+schedule_timezone = "America/New_York"  # Eastern
+```
+
+**To disable scheduling:**
+```hcl
+enable_schedule = false
+```
+
+**Working late?** Just start the instance manually - it will auto-stop at 11pm as usual, or you can stop it yourself when done.
 
 ## What's Installed
 
@@ -191,7 +217,9 @@ aws ec2 start-instances --instance-ids $(terraform output -raw instance_id)
 |---------------|--------------|
 | On-demand 24/7 | ~$150 |
 | On-demand 50hr/week | ~$43 |
-| **Spot 50hr/week** | **~$13** |
+| Spot 24/7 | ~$45 |
+| Spot + schedule (18hr/day) | ~$33 |
+| **Spot + schedule (actual ~10hr/day use)** | **~$18** |
 | Stopped (storage only) | ~$10 |
 
 ## Destroy

@@ -387,3 +387,93 @@ resource "aws_lambda_permission" "spot_restart" {
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.spot_restart[0].arn
 }
+
+# -----------------------------------------------------------------------------
+# Scheduled Start/Stop (EventBridge Scheduler)
+# -----------------------------------------------------------------------------
+
+# IAM Role for EventBridge Scheduler
+resource "aws_iam_role" "scheduler" {
+  count = var.enable_schedule ? 1 : 0
+  name  = "devbox-scheduler-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "scheduler.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "scheduler" {
+  count = var.enable_schedule ? 1 : 0
+  name  = "devbox-scheduler-policy"
+  role  = aws_iam_role.scheduler[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:StartInstances",
+          "ec2:StopInstances"
+        ]
+        Resource = aws_instance.devbox.arn
+      }
+    ]
+  })
+}
+
+# Schedule: Stop at 11pm Mountain
+resource "aws_scheduler_schedule" "stop" {
+  count       = var.enable_schedule ? 1 : 0
+  name        = "devbox-stop"
+  description = "Stop devbox instance at night"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  schedule_expression          = "cron(${var.schedule_stop})"
+  schedule_expression_timezone = var.schedule_timezone
+
+  target {
+    arn      = "arn:aws:scheduler:::aws-sdk:ec2:stopInstances"
+    role_arn = aws_iam_role.scheduler[0].arn
+
+    input = jsonencode({
+      InstanceIds = [aws_instance.devbox.id]
+      Hibernate   = true
+    })
+  }
+}
+
+# Schedule: Start at 5am Mountain
+resource "aws_scheduler_schedule" "start" {
+  count       = var.enable_schedule ? 1 : 0
+  name        = "devbox-start"
+  description = "Start devbox instance in the morning"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  schedule_expression          = "cron(${var.schedule_start})"
+  schedule_expression_timezone = var.schedule_timezone
+
+  target {
+    arn      = "arn:aws:scheduler:::aws-sdk:ec2:startInstances"
+    role_arn = aws_iam_role.scheduler[0].arn
+
+    input = jsonencode({
+      InstanceIds = [aws_instance.devbox.id]
+    })
+  }
+}
