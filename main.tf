@@ -123,6 +123,10 @@ resource "aws_instance" "devbox" {
   subnet_id              = aws_subnet.devbox.id
   vpc_security_group_ids = [aws_security_group.devbox.id]
 
+  # Enable hibernation - saves RAM to EBS on hibernate
+  # Requires: encrypted root volume (done), volume size > RAM (100GB > 16GB)
+  hibernation = true
+
   root_block_device {
     volume_size           = var.volume_size
     volume_type           = "gp3"

@@ -144,13 +144,18 @@ Connect-MicrosoftTeams
 # Stop instance (keeps EBS, stops compute charges)
 aws ec2 stop-instances --instance-ids $(terraform output -raw instance_id)
 
+# Hibernate instance (saves RAM to disk, faster resume)
+aws ec2 stop-instances --instance-ids $(terraform output -raw instance_id) --hibernate
+
 # Start instance
 aws ec2 start-instances --instance-ids $(terraform output -raw instance_id)
 ```
 
+**Hibernation** is enabled - your RAM state is saved to the encrypted EBS volume, so you can resume exactly where you left off (open files, running processes, etc).
+
 **Estimated costs:**
 - Running: ~$150/month (m7a.xlarge on-demand)
-- Stopped: ~$10/month (100GB gp3 storage only)
+- Stopped/Hibernated: ~$10/month (100GB gp3 storage only)
 
 ## Destroy
 
