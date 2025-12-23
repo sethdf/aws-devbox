@@ -1,12 +1,12 @@
 # AWS DevBox
 
-Terraform configuration for a reliable AWS cloud development workstation.
+Terraform configuration for a reliable AWS cloud development workstation with spot pricing.
 
 ## Why This Configuration?
 
 **Instance: m7a.xlarge (AMD EPYC Gen 4)**
 - 4 vCPUs, 16 GB RAM
-- ~$0.20/hour on-demand
+- **~$0.06/hour spot** (vs $0.20 on-demand) = ~70% savings
 - No CPU throttling (unlike t3 burstable instances)
 
 **OS: Ubuntu Server 24.04 LTS**
@@ -19,6 +19,11 @@ Terraform configuration for a reliable AWS cloud development workstation.
 - Faster `npm install`, `git clone`, etc.
 - Daily snapshots via DLM (7-day retention)
 
+**Spot + Hibernation**
+- Auto-hibernates on spot interruption (saves RAM state)
+- Auto-restarts when capacity returns
+- Email notifications on interruption/restart
+
 ## Quick Start
 
 ```bash
@@ -29,9 +34,10 @@ export AWS_PROFILE=your-profile
 
 # 2. Create terraform.tfvars
 cat > terraform.tfvars <<EOF
-ssh_public_key    = "ssh-ed25519 AAAA... your-key"
-allowed_ssh_cidrs = ["YOUR.IP.ADDRESS/32"]
-aws_region        = "us-east-1"
+ssh_public_key     = "ssh-ed25519 AAAA... your-key"
+allowed_ssh_cidrs  = ["YOUR.IP.ADDRESS/32"]
+aws_region         = "us-east-1"
+notification_email = "you@example.com"  # optional
 EOF
 
 # 3. Deploy
@@ -55,6 +61,34 @@ ssh ubuntu@$(terraform output -raw public_ip)
 | `ssh_public_key` | (required) | Your SSH public key |
 | `allowed_ssh_cidrs` | 0.0.0.0/0 | CIDRs allowed to SSH |
 | `snapshot_retention_days` | 7 | Days to keep snapshots |
+| `use_spot` | true | Use spot instances (~70% savings) |
+| `spot_max_price` | "" | Max spot price (empty = on-demand cap) |
+| `notification_email` | "" | Email for spot interruption alerts |
+| `spot_restart_attempts` | 5 | Retry attempts before giving up |
+
+## Spot Instance Behavior
+
+**How it works:**
+1. Instance runs on spot pricing (~$0.06/hr)
+2. If AWS reclaims capacity, you get 2-minute warning
+3. Instance auto-hibernates (RAM saved to EBS)
+4. Lambda auto-restarts when capacity returns
+5. Instance resumes exactly where you left off
+
+**Interruption frequency:** m7a.xlarge typically <5% monthly
+
+**What happens on interruption:**
+```
+Spot interrupted → Auto-hibernate (2 min) → Lambda detects stopped state
+    → Attempts restart (up to 5 tries with backoff)
+    → Success: resumes from hibernation
+    → Failure: sends email notification
+```
+
+**To disable spot and use on-demand:**
+```hcl
+use_spot = false
+```
 
 ## What's Installed
 
@@ -138,24 +172,27 @@ Connect-ExchangeOnline
 Connect-MicrosoftTeams
 ```
 
-## Cost Management
+## Manual Controls
 
 ```bash
-# Stop instance (keeps EBS, stops compute charges)
+# Stop instance (compute charges stop, EBS continues)
 aws ec2 stop-instances --instance-ids $(terraform output -raw instance_id)
 
-# Hibernate instance (saves RAM to disk, faster resume)
+# Hibernate instance (saves RAM to disk)
 aws ec2 stop-instances --instance-ids $(terraform output -raw instance_id) --hibernate
 
 # Start instance
 aws ec2 start-instances --instance-ids $(terraform output -raw instance_id)
 ```
 
-**Hibernation** is enabled - your RAM state is saved to the encrypted EBS volume, so you can resume exactly where you left off (open files, running processes, etc).
+## Cost Comparison
 
-**Estimated costs:**
-- Running: ~$150/month (m7a.xlarge on-demand)
-- Stopped/Hibernated: ~$10/month (100GB gp3 storage only)
+| Configuration | Monthly Cost |
+|---------------|--------------|
+| On-demand 24/7 | ~$150 |
+| On-demand 50hr/week | ~$43 |
+| **Spot 50hr/week** | **~$13** |
+| Stopped (storage only) | ~$10 |
 
 ## Destroy
 

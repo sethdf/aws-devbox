@@ -127,6 +127,19 @@ resource "aws_instance" "devbox" {
   # Requires: encrypted root volume (done), volume size > RAM (100GB > 16GB)
   hibernation = true
 
+  # Spot instance configuration (optional)
+  dynamic "instance_market_options" {
+    for_each = var.use_spot ? [1] : []
+    content {
+      market_type = "spot"
+      spot_options {
+        instance_interruption_behavior = "hibernate"
+        spot_instance_type             = "persistent"
+        max_price                      = var.spot_max_price != "" ? var.spot_max_price : null
+      }
+    }
+  }
+
   root_block_device {
     volume_size           = var.volume_size
     volume_type           = "gp3"
@@ -230,4 +243,147 @@ resource "aws_dlm_lifecycle_policy" "devbox" {
   tags = {
     Name = "devbox-dlm-policy"
   }
+}
+
+# -----------------------------------------------------------------------------
+# Spot Auto-Restart (Lambda + EventBridge + SNS)
+# -----------------------------------------------------------------------------
+
+# SNS Topic for notifications (optional)
+resource "aws_sns_topic" "devbox" {
+  count = var.notification_email != "" ? 1 : 0
+  name  = "devbox-notifications"
+}
+
+resource "aws_sns_topic_subscription" "devbox_email" {
+  count     = var.notification_email != "" ? 1 : 0
+  topic_arn = aws_sns_topic.devbox[0].arn
+  protocol  = "email"
+  endpoint  = var.notification_email
+}
+
+# IAM Role for Lambda
+resource "aws_iam_role" "spot_restart" {
+  count = var.use_spot ? 1 : 0
+  name  = "devbox-spot-restart-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "spot_restart" {
+  count = var.use_spot ? 1 : 0
+  name  = "devbox-spot-restart-policy"
+  role  = aws_iam_role.spot_restart[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:StartInstances",
+          "ec2:DescribeInstances"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "ec2:ResourceTag/Name" = var.hostname
+          }
+        }
+      },
+      {
+        Effect   = "Allow"
+        Action   = "ec2:DescribeInstances"
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:*:*:*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = "sns:Publish"
+        Resource = var.notification_email != "" ? aws_sns_topic.devbox[0].arn : "*"
+      }
+    ]
+  })
+}
+
+# Lambda function
+data "archive_file" "spot_restart" {
+  count       = var.use_spot ? 1 : 0
+  type        = "zip"
+  source_file = "${path.module}/scripts/spot-restart.py"
+  output_path = "${path.module}/.terraform/spot-restart.zip"
+}
+
+resource "aws_lambda_function" "spot_restart" {
+  count            = var.use_spot ? 1 : 0
+  filename         = data.archive_file.spot_restart[0].output_path
+  function_name    = "devbox-spot-restart"
+  role             = aws_iam_role.spot_restart[0].arn
+  handler          = "spot-restart.lambda_handler"
+  source_code_hash = data.archive_file.spot_restart[0].output_base64sha256
+  runtime          = "python3.12"
+  timeout          = 300 # 5 minutes for retries
+
+  environment {
+    variables = {
+      INSTANCE_ID   = aws_instance.devbox.id
+      MAX_ATTEMPTS  = tostring(var.spot_restart_attempts)
+      SNS_TOPIC_ARN = var.notification_email != "" ? aws_sns_topic.devbox[0].arn : ""
+    }
+  }
+
+  tags = {
+    Name = "devbox-spot-restart"
+  }
+}
+
+# EventBridge rule to trigger on instance state change
+resource "aws_cloudwatch_event_rule" "spot_restart" {
+  count       = var.use_spot ? 1 : 0
+  name        = "devbox-spot-restart"
+  description = "Trigger restart when devbox instance is stopped (spot interruption)"
+
+  event_pattern = jsonencode({
+    source      = ["aws.ec2"]
+    detail-type = ["EC2 Instance State-change Notification"]
+    detail = {
+      state       = ["stopped"]
+      instance-id = [aws_instance.devbox.id]
+    }
+  })
+}
+
+resource "aws_cloudwatch_event_target" "spot_restart" {
+  count     = var.use_spot ? 1 : 0
+  rule      = aws_cloudwatch_event_rule.spot_restart[0].name
+  target_id = "devbox-spot-restart"
+  arn       = aws_lambda_function.spot_restart[0].arn
+}
+
+resource "aws_lambda_permission" "spot_restart" {
+  count         = var.use_spot ? 1 : 0
+  statement_id  = "AllowEventBridge"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.spot_restart[0].function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.spot_restart[0].arn
 }

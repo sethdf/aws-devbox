@@ -50,3 +50,27 @@ variable "snapshot_retention_days" {
   type        = number
   default     = 7
 }
+
+variable "use_spot" {
+  description = "Use spot instances for ~70% cost savings"
+  type        = bool
+  default     = true
+}
+
+variable "spot_max_price" {
+  description = "Maximum hourly price for spot (empty = on-demand price cap)"
+  type        = string
+  default     = ""
+}
+
+variable "notification_email" {
+  description = "Email for spot interruption notifications (optional)"
+  type        = string
+  default     = ""
+}
+
+variable "spot_restart_attempts" {
+  description = "Number of times to retry starting spot before giving up"
+  type        = number
+  default     = 5
+}

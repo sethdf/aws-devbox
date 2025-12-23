@@ -32,3 +32,18 @@ output "ami_name" {
   description = "Ubuntu AMI name"
   value       = data.aws_ami.ubuntu.name
 }
+
+output "instance_type" {
+  description = "Instance type"
+  value       = var.instance_type
+}
+
+output "spot_enabled" {
+  description = "Whether spot pricing is enabled"
+  value       = var.use_spot
+}
+
+output "pricing_estimate" {
+  description = "Estimated hourly cost"
+  value       = var.use_spot ? "~$0.06/hr (spot)" : "~$0.20/hr (on-demand)"
+}

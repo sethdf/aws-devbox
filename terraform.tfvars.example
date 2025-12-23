@@ -8,6 +8,14 @@ ssh_public_key = "ssh-ed25519 AAAA..."
 # Find your IP: curl ifconfig.me
 allowed_ssh_cidrs = ["YOUR.IP.ADDRESS/32"]
 
+# Recommended: Email for spot interruption notifications
+notification_email = "you@example.com"
+
+# Spot instances (default: enabled for ~70% cost savings)
+# use_spot              = true
+# spot_max_price        = ""    # Empty = on-demand price cap
+# spot_restart_attempts = 5
+
 # Optional overrides
 # aws_region              = "us-east-1"
 # instance_type           = "m7a.xlarge"
