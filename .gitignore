@@ -1,23 +1,29 @@
 # Terraform
 .terraform/
-.terraform.lock.hcl
-*.tfstate
-*.tfstate.*
 *.tfplan
 crash.log
 crash.*.log
 
-# Sensitive files
+# State files are committed (encrypted via git-crypt)
+# Do NOT ignore: terraform.tfstate, terraform.tfstate.backup
+
+# Sensitive files - use sops secrets.yaml instead
 terraform.tfvars
-*.auto.tfvars
+.secrets.auto.tfvars
 override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
 
+# Decrypted secrets (temporary)
+secrets.yaml.tmp
+secrets.decrypted.yaml
+
+# Sops age recipient (not secret, but local)
+.sops-age-recipient
+
 # SSH keys
 *.pem
-*.pub
 
 # OS
 .DS_Store

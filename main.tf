@@ -224,15 +224,15 @@ resource "aws_dlm_lifecycle_policy" "devbox" {
 
 # SNS Topic for notifications (optional)
 resource "aws_sns_topic" "devbox" {
-  count = var.notification_email != "" ? 1 : 0
+  count = length(var.notification_emails) > 0 ? 1 : 0
   name  = "devbox-notifications"
 }
 
 resource "aws_sns_topic_subscription" "devbox_email" {
-  count     = var.notification_email != "" ? 1 : 0
+  for_each  = toset(var.notification_emails)
   topic_arn = aws_sns_topic.devbox[0].arn
   protocol  = "email"
-  endpoint  = var.notification_email
+  endpoint  = each.value
 }
 
 # IAM Role for Lambda
@@ -292,7 +292,7 @@ resource "aws_iam_role_policy" "spot_restart" {
       {
         Effect   = "Allow"
         Action   = "sns:Publish"
-        Resource = var.notification_email != "" ? aws_sns_topic.devbox[0].arn : "*"
+        Resource = length(var.notification_emails) > 0 ? aws_sns_topic.devbox[0].arn : "*"
       }
     ]
   })
@@ -320,7 +320,7 @@ resource "aws_lambda_function" "spot_restart" {
     variables = {
       INSTANCE_ID   = aws_instance.devbox.id
       MAX_ATTEMPTS  = tostring(var.spot_restart_attempts)
-      SNS_TOPIC_ARN = var.notification_email != "" ? aws_sns_topic.devbox[0].arn : ""
+      SNS_TOPIC_ARN = length(var.notification_emails) > 0 ? aws_sns_topic.devbox[0].arn : ""
     }
   }
 

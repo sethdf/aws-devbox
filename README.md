@@ -32,32 +32,64 @@ Terraform configuration for a reliable AWS cloud development workstation with sp
 ## Quick Start
 
 ### Prerequisites
+
+Install these tools:
+```bash
+# macOS
+brew install git-crypt sops age terraform tailscale
+
+# Or see: https://github.com/getsops/sops, https://github.com/FiloSottile/age
+```
+
+You'll also need:
 1. [Tailscale account](https://tailscale.com/) (free for personal use)
 2. [Tailscale auth key](https://login.tailscale.com/admin/settings/keys) - create a reusable key
 3. Tailscale installed on your local machine
+4. AWS credentials configured
 
-### Deploy
+### First-Time Setup
 
 ```bash
-# 1. Configure AWS credentials
-aws configure
-# or
-export AWS_PROFILE=your-profile
+# 1. Clone and setup encryption
+git clone https://github.com/YOUR_USERNAME/aws-devbox.git
+cd aws-devbox
+make setup
 
-# 2. Create terraform.tfvars
-cat > terraform.tfvars <<EOF
-tailscale_auth_key = "tskey-auth-xxxxx"  # From Tailscale admin console
-notification_email = "you@example.com"   # Optional
-aws_region         = "us-east-1"
+# 2. Add your Tailscale auth key
+sops secrets.yaml
+# Edit: replace "tskey-auth-REPLACE-ME" with your key
+
+# 3. IMPORTANT: Backup encryption keys to password manager
+make backup-keys
+
+# 4. Deploy
+make apply
+
+# 5. Connect (via Tailscale)
+ssh devbox
+```
+
+### Recovering on a New Machine
+
+```bash
+# 1. Clone repo
+git clone https://github.com/YOUR_USERNAME/aws-devbox.git
+cd aws-devbox
+
+# 2. Restore keys from password manager
+# Git-crypt key (decode base64 and unlock):
+echo "YOUR_BASE64_KEY" | base64 -d > /tmp/gc-key
+git-crypt unlock /tmp/gc-key && rm /tmp/gc-key
+
+# Age key (for sops):
+mkdir -p ~/.config/sops/age
+cat > ~/.config/sops/age/keys.txt << 'EOF'
+# paste your age key here
 EOF
 
-# 3. Deploy
-terraform init
-terraform plan
-terraform apply
-
-# 4. Connect (via Tailscale)
-ssh devbox
+# 3. Now you can work normally
+make plan
+make apply
 ```
 
 ## Variables
@@ -74,7 +106,7 @@ ssh devbox
 | `snapshot_retention_days` | 7 | Days to keep snapshots |
 | `use_spot` | true | Use spot instances (~70% savings) |
 | `spot_max_price` | "" | Max spot price (empty = on-demand cap) |
-| `notification_email` | "" | Email for spot interruption alerts |
+| `notification_emails` | [] | Emails for spot interruption alerts |
 | `spot_restart_attempts` | 5 | Retry attempts before giving up |
 | `enable_schedule` | true | Enable auto start/stop schedule |
 | `schedule_start` | 0 5 * * ? * | Cron for auto-start (5am) |

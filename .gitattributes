@@ -1,0 +1,15 @@
+# Git-crypt: encrypt sensitive files
+terraform.tfstate filter=git-crypt diff=git-crypt
+terraform.tfstate.backup filter=git-crypt diff=git-crypt
+*.tfvars filter=git-crypt diff=git-crypt
+.secrets.auto.tfvars filter=git-crypt diff=git-crypt
+
+# Sops-encrypted files (already encrypted, but mark them)
+secrets.yaml diff=sops
+
+# Don't encrypt these
+*.tf !filter !diff
+*.md !filter !diff
+Makefile !filter !diff
+.gitignore !filter !diff
+.sops.yaml !filter !diff

@@ -1,16 +1,14 @@
-# Copy this file to terraform.tfvars and fill in your values
-# cp terraform.tfvars.example terraform.tfvars
+# Optional configuration overrides
+# Copy to terraform.tfvars or set via environment variables
+#
+# NOTE: Secrets (tailscale_auth_key) are managed via sops
+#       Run: sops secrets.yaml
 
-# Required: Tailscale auth key
-# Get from: https://login.tailscale.com/admin/settings/keys
-# Create a reusable key for convenience
-tailscale_auth_key = "tskey-auth-xxxxx"
+# Emails for spot interruption notifications
+notification_emails = ["your-email@example.com", "your-work-email@example.com"]
 
-# Optional: Tailscale hostname (default: devbox)
+# Tailscale hostname (default: devbox)
 # tailscale_hostname = "devbox"
-
-# Optional: Email for spot interruption notifications
-notification_email = "your-email@example.com"
 
 # Spot instances (default: enabled for ~70% cost savings)
 # use_spot              = true
@@ -23,7 +21,7 @@ notification_email = "your-email@example.com"
 # schedule_stop     = "0 23 * * ? *"  # 11pm
 # schedule_timezone = "America/Denver"
 
-# Optional overrides
+# Instance configuration
 # aws_region              = "us-east-1"
 # instance_type           = "m7a.xlarge"
 # volume_size             = 100

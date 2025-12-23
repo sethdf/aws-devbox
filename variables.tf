@@ -52,10 +52,10 @@ variable "spot_max_price" {
   default     = ""
 }
 
-variable "notification_email" {
-  description = "Email for spot interruption notifications (optional)"
-  type        = string
-  default     = ""
+variable "notification_emails" {
+  description = "Emails for spot interruption notifications"
+  type        = list(string)
+  default     = []
 }
 
 variable "spot_restart_attempts" {
