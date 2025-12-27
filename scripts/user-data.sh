@@ -291,9 +291,9 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/too
 sudo chsh -s $(which zsh) ubuntu
 mkdir -p ~/code ~/projects ~/.local/bin ~/.claude
 cat >> ~/.zshrc <<'ZSHRC'
-eval "$(mise activate zsh)"
-eval "$(zoxide init zsh)"
-eval "$(direnv hook zsh)"
+command -v mise &>/dev/null && eval "$(mise activate zsh)"
+command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
+command -v direnv &>/dev/null && eval "$(direnv hook zsh)"
 export PATH="$HOME/bin:$PATH"
 alias ls='eza' ll='eza -la' lg='lazygit' ld='lazydocker'
 alias unlock='source ~/bin/bw-unlock' init='~/bin/devbox-init'
