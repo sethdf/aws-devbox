@@ -81,7 +81,7 @@ notification_emails = ["your-email@example.com"]
 #    - Type: Login (or Secure Note)
 #    - Custom field: "key_b64" = (base64-encoded git-crypt key)
 #
-# OPTIONAL (for email):
+# OPTIONAL (for Google email + calendar):
 #
 # 8. devbox/gmail-oauth
 #    - Type: Login
@@ -91,10 +91,35 @@ notification_emails = ["your-email@example.com"]
 #
 # To get Gmail OAuth credentials:
 #   1. Go to https://console.cloud.google.com/
-#   2. Create project → APIs & Services → Enable Gmail API
+#   2. Create project → APIs & Services → Enable Gmail API + Calendar API
 #   3. Credentials → Create OAuth Client ID (Desktop app)
 #   4. Copy client ID and secret to Bitwarden
-#   5. After devbox-init, run: himalaya account configure gmail
+#   5. After devbox-init, run:
+#      - himalaya account configure gmail
+#      - gcalcli init
+#
+# OPTIONAL (for MS365 email + calendar):
+#
+# 9. devbox/ms365-oauth
+#    - Type: Login
+#    - Username: your.email@company.com
+#    - Custom field: "client_id" = (Azure AD application client ID)
+#    - Custom field: "client_secret" = (Azure AD client secret)
+#    - Custom field: "tenant_id" = (Azure AD tenant ID)
+#
+# To get MS365 OAuth credentials:
+#   1. Go to https://portal.azure.com/
+#   2. Azure AD → App registrations → New registration
+#   3. Name: "Devbox CLI", Redirect URI: http://localhost (Web)
+#   4. Note client ID and tenant ID
+#   5. Certificates & secrets → New client secret
+#   6. API permissions → Add:
+#      - IMAP.AccessAsUser.All, SMTP.Send, Calendars.ReadWrite, offline_access
+#   7. Grant admin consent
+#   8. Copy credentials to Bitwarden
+#   9. After devbox-init, run:
+#      - himalaya account configure ms365
+#      - thallo authorize
 #
 # To get the git-crypt key:
 #   cd ~/.config/claude-sessions

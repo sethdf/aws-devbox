@@ -50,6 +50,9 @@ apt-get install -y nodejs
 # 7. Python
 apt-get install -y python3-pip python3-venv python3-full
 
+# 7b. Python CLI tools (calendar/email)
+pip3 install --break-system-packages gcalcli thallo
+
 # 8. CLI tools via npm
 npm install -g tldr @anthropic-ai/claude-code @bitwarden/cli @pnp/cli-microsoft365
 
@@ -325,6 +328,90 @@ HIMALAYA
     fi
 else
     echo "Himalaya config exists or devbox/gmail-oauth not in Bitwarden (optional)"
+fi
+
+echo "=== Setting up gcalcli (Google Calendar) ==="
+if [[ ! -f ~/.gcalcli_oauth ]] && bw get item "devbox/gmail-oauth" &>/dev/null; then
+    GMAIL_CLIENT_ID=$(bw get item "devbox/gmail-oauth" | jq -r '.fields[]? | select(.name=="client_id") | .value // empty')
+    GMAIL_CLIENT_SECRET=$(bw get item "devbox/gmail-oauth" | jq -r '.fields[]? | select(.name=="client_secret") | .value // empty')
+
+    if [[ -n "$GMAIL_CLIENT_ID" && -n "$GMAIL_CLIENT_SECRET" ]]; then
+        cat > ~/.gcalcli_oauth <<GCALCLI
+{
+  "client_id": "$GMAIL_CLIENT_ID",
+  "client_secret": "$GMAIL_CLIENT_SECRET"
+}
+GCALCLI
+        chmod 600 ~/.gcalcli_oauth
+        echo "gcalcli configured. Run: gcalcli init"
+    fi
+else
+    echo "gcalcli config exists or devbox/gmail-oauth not in Bitwarden (optional)"
+fi
+
+echo "=== Setting up MS365 (email + calendar) ==="
+if bw get item "devbox/ms365-oauth" &>/dev/null; then
+    MS365_EMAIL=$(bw get item "devbox/ms365-oauth" | jq -r '.login.username // empty')
+    MS365_CLIENT_ID=$(bw get item "devbox/ms365-oauth" | jq -r '.fields[]? | select(.name=="client_id") | .value // empty')
+    MS365_CLIENT_SECRET=$(bw get item "devbox/ms365-oauth" | jq -r '.fields[]? | select(.name=="client_secret") | .value // empty')
+    MS365_TENANT_ID=$(bw get item "devbox/ms365-oauth" | jq -r '.fields[]? | select(.name=="tenant_id") | .value // empty')
+
+    if [[ -n "$MS365_EMAIL" && -n "$MS365_CLIENT_ID" && -n "$MS365_TENANT_ID" ]]; then
+        # Add MS365 account to himalaya config
+        if [[ -f ~/.config/himalaya/config.toml ]] && ! grep -q "accounts.ms365" ~/.config/himalaya/config.toml; then
+            cat >> ~/.config/himalaya/config.toml <<HIMALAYA_MS365
+
+[accounts.ms365]
+default = false
+email = "$MS365_EMAIL"
+
+backend.type = "imap"
+backend.host = "outlook.office365.com"
+backend.port = 993
+backend.encryption = "tls"
+backend.login = "$MS365_EMAIL"
+backend.auth.type = "oauth2"
+backend.auth.client-id = "$MS365_CLIENT_ID"
+backend.auth.client-secret = "$MS365_CLIENT_SECRET"
+backend.auth.method = "redirect"
+backend.auth.auth-url = "https://login.microsoftonline.com/$MS365_TENANT_ID/oauth2/v2.0/authorize"
+backend.auth.token-url = "https://login.microsoftonline.com/$MS365_TENANT_ID/oauth2/v2.0/token"
+backend.auth.scopes = ["https://outlook.office365.com/IMAP.AccessAsUser.All", "https://outlook.office365.com/SMTP.Send", "offline_access"]
+
+sender.type = "smtp"
+sender.host = "smtp.office365.com"
+sender.port = 587
+sender.encryption = "starttls"
+sender.login = "$MS365_EMAIL"
+sender.auth.type = "oauth2"
+sender.auth.client-id = "$MS365_CLIENT_ID"
+sender.auth.client-secret = "$MS365_CLIENT_SECRET"
+sender.auth.method = "redirect"
+sender.auth.auth-url = "https://login.microsoftonline.com/$MS365_TENANT_ID/oauth2/v2.0/authorize"
+sender.auth.token-url = "https://login.microsoftonline.com/$MS365_TENANT_ID/oauth2/v2.0/token"
+sender.auth.scopes = ["https://outlook.office365.com/IMAP.AccessAsUser.All", "https://outlook.office365.com/SMTP.Send", "offline_access"]
+HIMALAYA_MS365
+            echo "Himalaya MS365 configured. Run: himalaya account configure ms365"
+        fi
+
+        # Configure thallo for MS365 calendar
+        mkdir -p ~/.config/thallo
+        if [[ ! -f ~/.config/thallo/config.toml ]]; then
+            cat > ~/.config/thallo/config.toml <<THALLO
+[azure]
+client_id = "$MS365_CLIENT_ID"
+tenant_id = "$MS365_TENANT_ID"
+
+[calendar]
+default = "Calendar"
+THALLO
+            echo "thallo configured. Run: thallo authorize"
+        fi
+    else
+        echo "MS365 OAuth credentials incomplete in Bitwarden"
+    fi
+else
+    echo "devbox/ms365-oauth not in Bitwarden (optional)"
 fi
 
 echo "=== DONE ==="
