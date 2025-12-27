@@ -167,21 +167,21 @@ else
     echo "claude-sessions repo not configured in devbox/identity (optional)"
 fi
 
-echo "=== Setting up dotfiles/config repo ==="
-DOTFILES_REPO=$(echo "$IDENTITY" | jq -r '.fields[]? | select(.name=="dotfiles_repo") | .value // empty')
-if [[ -n "$DOTFILES_REPO" ]] && [[ ! -d ~/code/dotfiles ]] && [[ -f ~/.ssh/id_ed25519_home ]]; then
+echo "=== Setting up LifeMaestro ==="
+LIFEMAESTRO_REPO=$(echo "$IDENTITY" | jq -r '.fields[]? | select(.name=="lifemaestro_repo") | .value // empty')
+if [[ -n "$LIFEMAESTRO_REPO" ]] && [[ ! -d ~/code/lifemaestro ]] && [[ -f ~/.ssh/id_ed25519_home ]]; then
     mkdir -p ~/code
-    git clone "git@github.com-home:${DOTFILES_REPO}.git" ~/code/dotfiles
-    if [[ -f ~/code/dotfiles/install.sh ]]; then
-        cd ~/code/dotfiles && ./install.sh && cd -
+    git clone "git@github.com-home:${LIFEMAESTRO_REPO}.git" ~/code/lifemaestro
+    if [[ -f ~/code/lifemaestro/install.sh ]]; then
+        cd ~/code/lifemaestro && ./install.sh && cd -
     fi
-    if [[ -d ~/code/dotfiles/.claude ]]; then
+    if [[ -d ~/code/lifemaestro/.claude ]]; then
         [[ -d ~/.claude && ! -L ~/.claude ]] && rm -rf ~/.claude
-        ln -sfn ~/code/dotfiles/.claude ~/.claude
+        ln -sfn ~/code/lifemaestro/.claude ~/.claude
     fi
-    echo "Dotfiles repo installed"
+    echo "LifeMaestro installed"
 else
-    echo "Dotfiles repo not configured in devbox/identity (optional)"
+    echo "LifeMaestro repo not configured in devbox/identity (optional)"
 fi
 
 echo "=== Setting up Himalaya (email) ==="

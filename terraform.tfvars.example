@@ -111,7 +111,7 @@ github_username = "your-github-username"
 #      - "aws_sso_region" = (SSO region, e.g., us-east-1)
 #      - "aws_role_name" = (IAM role name, e.g., AdministratorAccess)
 #    - Custom fields for repos to clone (optional):
-#      - "dotfiles_repo" = (e.g., "username/dotfiles" - cloned to ~/code/dotfiles)
+#      - "lifemaestro_repo" = (e.g., "username/lifemaestro" - cloned to ~/code/lifemaestro, runs install.sh)
 #      - "claude_sessions_repo" = (e.g., "username/claude-sessions-config")
 #
 # OPTIONAL (for Google email + calendar):
