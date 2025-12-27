@@ -238,6 +238,21 @@ echo "=== Setting up claude-sessions ==="
 bw get item "devbox/git-crypt-key" &>/dev/null && cd ~/.config/claude-sessions && git-crypt unlock <(bw get item "devbox/git-crypt-key" | jq -r '.fields[]? | select(.name=="key_b64") | .value' | base64 -d) && cd -
 mkdir -p ~/claude-sessions/home ~/claude-sessions/work
 
+echo "=== Setting up LifeMaestro ==="
+if [[ ! -d ~/code/lifemaestro ]] && [[ -f ~/.ssh/id_ed25519_home ]]; then
+    git clone git@github.com-home:YOUR_USERNAME/dotfiles.git ~/code/lifemaestro
+    cd ~/code/lifemaestro && ./install.sh && cd -
+    # Symlink .claude to get skills/rules globally
+    if [[ -d ~/code/lifemaestro/.claude ]]; then
+        # Remove default .claude dir (created by user-data) to replace with symlink
+        [[ -d ~/.claude && ! -L ~/.claude ]] && rm -rf ~/.claude
+        ln -sfn ~/code/lifemaestro/.claude ~/.claude
+    fi
+    echo "LifeMaestro installed"
+else
+    echo "LifeMaestro already installed or SSH key missing"
+fi
+
 echo "=== DONE ==="
 echo "Run: aws sso login --profile home"
 DEVBOXINIT
