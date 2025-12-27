@@ -155,6 +155,13 @@ export PATH="$HOME/bin:$PATH"
 alias ls='eza' ll='eza -la' lg='lazygit' ld='lazydocker'
 alias unlock='source ~/bin/bw-unlock' init='~/bin/devbox-init' check='~/bin/devbox-check'
 ZSHRC
+cat >> ~/.bashrc <<'BASHRC'
+command -v zoxide &>/dev/null && eval "$(zoxide init bash)"
+command -v direnv &>/dev/null && eval "$(direnv hook bash)"
+export PATH="$HOME/bin:$PATH"
+alias ls='eza' ll='eza -la' lg='lazygit' ld='lazydocker'
+alias unlock='source ~/bin/bw-unlock' init='~/bin/devbox-init' check='~/bin/devbox-check'
+BASHRC
 cat > ~/.claude/settings.json <<'CLAUDE'
 {"permissions":{"allow":["Bash(git *)","Bash(gh *)","Bash(aws *)","Bash(npm *)","Bash(docker *)","Bash(terraform *)","Bash(bw *)","Read","Write","Edit","Glob","Grep","Task","WebFetch","TodoRead","TodoWrite"],"deny":[]}}
 CLAUDE
