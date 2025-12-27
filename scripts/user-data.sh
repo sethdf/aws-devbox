@@ -110,7 +110,7 @@ METADATA_URL="http://169.254.169.254/latest/meta-data/spot/instance-action"
 NOTIFIED=false
 while true; do
     TOKEN=$(curl -s -X PUT "$TOKEN_URL" -H "X-aws-ec2-metadata-token-ttl-seconds: 60" 2>/dev/null)
-    RESP=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" -w "%{http_code}" -o /tmp/spot-action "$METADATA_URL" 2>/dev/null)
+    RESP=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" -w "%%{http_code}" -o /tmp/spot-action "$METADATA_URL" 2>/dev/null)
     if [ "$RESP" = "200" ] && [ "$NOTIFIED" = "false" ]; then
         wall "SPOT INTERRUPTION - Hibernating in ~2 min"
         NOTIFIED=true
