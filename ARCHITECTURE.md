@@ -1,0 +1,48 @@
+# Personal AI Control Center
+
+## Stack
+
+**Host** - Terraform-provisioned EC2 with Tailscale-only access, LUKS encryption, and Bitwarden for secrets.
+
+**CLIProxyAPI** - Wraps AI CLI tools (Gemini, Claude Code, Codex) and exposes them as standard APIs, enabling programmatic access to paid subscriptions without API keys.
+
+**LiteLLM** - Unified interface to all AI models. Configured via YAML. Routes to direct APIs, cloud providers (Bedrock, Vertex), or CLIProxyAPI based on configuration.
+
+**Skills** - Markdown files containing prompts, model preferences, and workflow definitions. The intelligence layer.
+
+**Scripts** - Simple utilities in ~/bin that load skills and call LiteLLM.
+
+## Access Paths
+
+| Method | Auth | Use Case |
+|--------|------|----------|
+| Direct API | API keys from Bitwarden | Pay-per-token |
+| Bedrock/Vertex | AWS/GCP credentials | Cloud billing |
+| CLIProxyAPI | OAuth via CLI tools | Existing subscriptions |
+
+## Directory Structure
+
+```
+~/
+├── .config/litellm/config.yaml   # Model routing configuration
+├── bin/                          # Simple scripts
+├── skills/                       # Prompt templates and workflows
+└── log/                          # Daily notes and outputs
+```
+
+## What Was Removed
+
+Baton (custom FastAPI server with 20+ plugins) was eliminated. Its functionality is replaced by:
+
+- Zones → LiteLLM config or environment variables
+- Fanout → Skill parameter + async loop
+- Judge → A skill that evaluates responses
+- Guardrails → LiteLLM built-in rate limiting
+- SSM → Standalone script (unrelated to AI)
+
+## Principles
+
+1. No custom servers when a library suffices
+2. Configuration in YAML and Markdown, not code
+3. Skills define what to do, scripts execute
+4. Each component does one thing well
