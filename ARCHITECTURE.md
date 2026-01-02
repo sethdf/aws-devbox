@@ -73,9 +73,14 @@ The system draws from established skill libraries rather than reinventing prompt
 ```
 ~/
 ├── .config/litellm/config.yaml   # Model routing
+├── .config/zones/                # Zone configurations
 ├── bin/                          # CLI tools and scripts
 ├── skills/                       # Local skill library
 ├── log/                          # Daily notes and outputs
+├── sessions/                     # Session state and history
+│   ├── active/                   # Currently running sessions
+│   ├── paused/                   # Suspended sessions
+│   └── archive/                  # Completed sessions
 └── .cache/skillsmp/              # Marketplace skill cache
 ```
 
@@ -115,3 +120,49 @@ Zero friction does not mean zero safety. AI actions that could cause data loss o
 **Dry Run by Default** - Destructive operations preview their effects before execution. The user sees what will change and explicitly approves. This is the one exception to no user interaction: irreversible actions always pause.
 
 **Audit Trail** - All AI-initiated actions are logged with timestamp, skill invoked, parameters used, and outcome. If something goes wrong, the log shows exactly what happened and why.
+
+## Sessions
+
+All activity occurs within sessions. Sessions provide context boundaries, state persistence, and audit scope. Guardrails and dry runs apply at the session level.
+
+**Work Sessions** - A defined period of activity with unified context. Starting a session creates a boundary. Everything within it shares state, history, and logging. Stop the session and context is saved. Resume later and pick up where you left off. Work sessions group related actions for review and replay.
+
+**Model Sessions** - Conversation memory that carries forward across interactions. When working with a model, prior exchanges inform current responses. Model sessions can span multiple work sessions. Context is persisted to disk and reloaded on resume. Token limits are managed by summarization or sliding window.
+
+**Zone Sessions** - Isolated contexts for different domains. Work zone, personal zone, project-specific zones. Each zone has its own model preferences, credentials scope, and guardrail settings. Switching zones switches context entirely. No bleed between work and personal, between client A and client B.
+
+**Agent Sessions** - Autonomous background tasks with managed lifecycle. An agent session starts with a goal and skill, runs independently, and reports when complete. Agent sessions are model-agnostic, using LiteLLM for all model calls. State persists across interruptions. Multiple agent sessions can run concurrently.
+
+## Agent Loop
+
+Following PAI's "Scaffolding > Model" principle, agents use a minimal loop that works with any model:
+
+The loop receives a goal, repeatedly calls the model through LiteLLM, executes any requested tools, adds results to context, and continues until the goal is achieved or the agent determines it cannot proceed. Every iteration is logged. Every tool execution passes through guardrails.
+
+Agent sessions inherit the guardrail settings of their parent zone. Destructive actions trigger dry run and require approval unless the zone explicitly permits autonomous execution. Read-only and reversible actions proceed with logging.
+
+The agent loop is intentionally simple. No framework, no complex orchestration. A script of approximately fifty lines that calls LiteLLM, handles tools, and logs everything. If a better standard emerges, it can be swapped without architectural change.
+
+## Session Lifecycle
+
+**Start** - Session begins with explicit start or implicit first action. Context is initialized. Zone settings are loaded. Logging begins.
+
+**Active** - Actions execute within session context. Model calls include session history. Tools execute with session-scoped permissions. All activity is logged to session-specific files.
+
+**Pause** - Session state is serialized to disk. Can occur explicitly or on connection drop. No data loss.
+
+**Resume** - State is restored from disk. Context is reloaded. Work continues from pause point.
+
+**End** - Session completes. Final state is logged. Summary is generated. Artifacts are indexed for future reference.
+
+## Session Guardrails
+
+Guardrails are evaluated at session scope:
+
+**Inherited Permissions** - Sessions inherit the guardrail settings of their zone. A work zone may permit more autonomous action than a personal zone. A high-trust project zone may allow destructive actions that a new project zone would block.
+
+**Escalation Path** - When an action exceeds session permissions, the session pauses and requests approval. Approval can come interactively or via configured notification channel. Denied actions are logged and the session continues with alternative approach.
+
+**Dry Run Integration** - Before any destructive action, the session generates a preview. In interactive sessions, the preview is shown immediately. In agent sessions, the preview is logged and the action waits for approval unless pre-authorized.
+
+**Session Audit** - Complete session history is retained. Every model call, tool execution, decision point, and outcome. Sessions can be replayed for debugging or review. Audit logs are append-only and tamper-evident.
