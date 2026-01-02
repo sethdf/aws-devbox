@@ -38,16 +38,6 @@ This eliminates the need for custom fanout code. Multi-model comparison, racing 
 └── log/                          # Daily notes and outputs
 ```
 
-## What Was Removed
-
-Baton (custom FastAPI server with 20+ plugins) was eliminated. Its functionality is replaced by:
-
-- Zones → LiteLLM config or environment variables
-- Fanout → Skill parameter + async loop
-- Judge → A skill that evaluates responses
-- Guardrails → LiteLLM built-in rate limiting
-- SSM → Standalone script (unrelated to AI)
-
 ## Principles
 
 1. No custom servers when a library suffices
