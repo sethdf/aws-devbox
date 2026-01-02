@@ -20,6 +20,14 @@
 | Bedrock/Vertex | AWS/GCP credentials | Cloud billing |
 | CLIProxyAPI | OAuth via CLI tools | Existing subscriptions |
 
+## Unified Multi-Model Access
+
+LiteLLM's batch_completion enables parallel queries to multiple models. CLIProxyAPI exposes subscription-based CLI tools as standard API endpoints. Combined, this means fanout works identically across any model regardless of authentication method.
+
+A single batch_completion call can query Gemini through your Google subscription, Claude through your Anthropic subscription, and GPT-4 through an API key simultaneously. LiteLLM routes each request to the appropriate endpoint. The caller doesn't know or care which auth method each model uses.
+
+This eliminates the need for custom fanout code. Multi-model comparison, racing for fastest response, or ensemble approaches all reduce to LiteLLM configuration plus a single function call.
+
 ## Directory Structure
 
 ```
