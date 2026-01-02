@@ -83,3 +83,15 @@ The system eliminates barriers between intent and action. Resources are always a
 **Invisible Authentication** - Bitwarden supplies secrets on demand. CLIProxyAPI maintains OAuth sessions. LiteLLM routes to whichever provider is authenticated. The user never types a password or refreshes a token during normal operation.
 
 **No User Interaction** - Workflows run to completion without prompts or confirmations. Skills define all parameters upfront. Scripts handle errors and retry automatically. Human attention is reserved for decisions that require judgment, not for babysitting processes.
+
+## Guardrails
+
+Zero friction does not mean zero safety. AI actions that could cause data loss or irreversible changes require explicit gates.
+
+**Action Classification** - Every operation is classified as read-only, reversible, or destructive. Read-only actions execute freely. Reversible actions proceed with logging. Destructive actions require confirmation or are blocked entirely.
+
+**Pre-Execution Validation** - Before any file modification, deletion, or external mutation, the system validates intent against defined boundaries. Skills declare their maximum scope. Scripts cannot exceed what the skill permits.
+
+**Dry Run by Default** - Destructive operations preview their effects before execution. The user sees what will change and explicitly approves. This is the one exception to no user interaction: irreversible actions always pause.
+
+**Audit Trail** - All AI-initiated actions are logged with timestamp, skill invoked, parameters used, and outcome. If something goes wrong, the log shows exactly what happened and why.
