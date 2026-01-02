@@ -48,6 +48,22 @@ A single call can query Gemini through your Google subscription, Claude through 
 
 **Skill Format** - Each skill is a markdown file with frontmatter defining model preferences, temperature, and parameters, followed by the prompt template. Skills compose with other skills.
 
+## Skill Sources
+
+The system draws from established skill libraries rather than reinventing prompts. Community-maintained and vendor-published skills provide tested, refined patterns.
+
+**Fabric Patterns** - Daniel Miessler's pattern library for content analysis, summarization, writing, code explanation, and documentation improvement. The foundation of PAI's skill approach. Available at github.com/danielmiessler/fabric.
+
+**Anthropic Prompt Library** - Official prompts from Anthropic covering business and personal tasks including code consulting, writing assistance, data analysis, and creative work. Optimized for Claude models. Available at docs.anthropic.com/en/prompt-library.
+
+**OpenAI Cookbook** - Examples and guides for GPT models including agentic prompting, multi-tool orchestration, and specialized workflows. Continuously updated with new model releases. Available at cookbook.openai.com.
+
+**Google Prompt Gallery** - Official Gemini examples for multimodal tasks, structured output, teaching, and code generation. Available at ai.google.dev/gemini-api/prompts.
+
+**Agent Skills** - Open standard originally developed by Anthropic for extending agent capabilities. Structured folders of instructions, scripts, and resources that agents discover and use. Supported by Claude, OpenAI, Cursor, GitHub, and VS Code. Available at agentskills.io.
+
+**SkillsMP** - Aggregated marketplace caching skills from multiple sources with search, scoring by author trust and community rating, and local installation.
+
 ## Directory Structure
 
 ```
