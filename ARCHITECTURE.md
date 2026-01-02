@@ -125,13 +125,19 @@ Zero friction does not mean zero safety. AI actions that could cause data loss o
 
 All activity occurs within sessions. Sessions provide context boundaries, state persistence, and audit scope. Guardrails and dry runs apply at the session level.
 
-**Work Sessions** - A defined period of activity with unified context. Starting a session creates a boundary. Everything within it shares state, history, and logging. Stop the session and context is saved. Resume later and pick up where you left off. Work sessions group related actions for review and replay.
+## Session Hierarchy
 
-**Model Sessions** - Conversation memory that carries forward across interactions. When working with a model, prior exchanges inform current responses. Model sessions can span multiple work sessions. Context is persisted to disk and reloaded on resume. Token limits are managed by summarization or sliding window.
+Sessions are compositional. Zone provides the foundation. Work and Agent sessions run within a zone and contain model memory.
 
-**Zone Sessions** - Isolated contexts for different domains. Work zone, personal zone, project-specific zones. Each zone has its own model preferences, credentials scope, and guardrail settings. Switching zones switches context entirely. No bleed between work and personal, between client A and client B.
+**Zone Session** - The context layer. Provides credentials scope, guardrail settings, model preferences, and permission boundaries. Work zone, personal zone, project-specific zones. Switching zones switches context entirely. No bleed between domains.
 
-**Agent Sessions** - Autonomous background tasks with managed lifecycle. An agent session starts with a goal and skill, runs independently, and reports when complete. Agent sessions are model-agnostic, using LiteLLM for all model calls. State persists across interruptions. Multiple agent sessions can run concurrently.
+**Model Session** - Conversation memory within a zone. Prior exchanges inform current responses. Context is persisted to disk and reloaded on resume. Token limits are managed by summarization or sliding window. Model sessions are contained within work or agent sessions.
+
+**Work Session** - Human-driven activity within a zone. Starting a session creates a boundary. Everything within it shares state, history, and logging. Contains one or more model sessions. Stop the session and context is saved. Resume later and pick up where you left off.
+
+**Agent Session** - Autonomous background task within a zone. Starts with a goal and skill, runs independently, reports when complete. Contains its own model session. Model-agnostic using LiteLLM. State persists across interruptions. Multiple agent sessions can run concurrently.
+
+Both work and agent sessions inherit zone context and maintain their own model memory. A work session in your personal zone uses personal credentials and personal guardrails. An agent session in your work zone uses work credentials and work guardrails.
 
 ## Agent Loop
 
