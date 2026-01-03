@@ -384,11 +384,13 @@ Following "Code Before Prompts," logging leverages LiteLLM's built-in observabil
 
 ## Scheduled Agents
 
-Two agent sessions run daily to maintain and improve the system. Both operate within guardrails and produce reports for human review before any changes are applied.
+Agents run on a daily schedule via cron. Global agents run once. Per-zone agents run for each configured zone. All operate within guardrails and produce reports for human review before any changes are applied.
 
-### Researcher Agent
+### Global Agents
 
-Runs daily to discover improvements from the AI ecosystem.
+#### Researcher (External)
+
+Runs once daily to scan the AI ecosystem for improvements.
 
 **Goal:** Find new developments in AI tooling, prompting techniques, model capabilities, and agent patterns that could benefit the system.
 
@@ -399,68 +401,120 @@ Runs daily to discover improvements from the AI ecosystem.
 - Model provider changelogs and documentation
 - AI research and tooling communities
 
-**Output:** Research report saved to ~/log/researcher/{date}.md containing:
+**Output:** ~/log/research/{date}.md containing:
 - New techniques discovered
 - Relevant new skills or patterns
 - Model capability updates
 - Suggested improvements with rationale
 - Links to sources
 
-**Scope:** Read-only. The researcher gathers and reports. It does not modify the system.
+**Scope:** Read-only. Gathers and reports. Does not modify the system.
 
-**Schedule:** Daily, off-peak hours.
+### Per-Zone Agents
 
-### Healer Agent
+Each zone runs its own set of agents. Zone isolation is maintained. Work zone agents only see work sessions.
 
-Runs daily to maintain system health and evaluate improvements.
+#### Researcher (Internal)
 
-**Goal:** Review system state, identify issues, and assess whether researcher findings should be integrated while maintaining PAI principles.
+Runs daily per zone to capture knowledge from zone activity.
+
+**Goal:** Index artifacts, learnings, and patterns from zone sessions. Combine with global research for zone-specific relevance.
 
 **Inputs:**
-- Session logs from past 24 hours
-- Error logs and failures
+- Global research report
+- Zone session logs and outputs
+- Zone artifacts and notes
+
+**Output:** ~/log/{zone}/knowledge/{date}.md containing:
+- Zone-specific learnings indexed
+- Global research filtered for zone relevance
+- Patterns identified from zone work
+- Knowledge base updates
+
+**Scope:** Read-only. Indexes and reports. Knowledge stays local, not fed to AI.
+
+#### Healer
+
+Runs daily per zone to maintain zone health.
+
+**Goal:** Review zone state, identify issues, propose fixes while maintaining PAI principles.
+
+**Inputs:**
+- Zone session logs from past 24 hours
+- Zone error logs and failures
 - Guardrail denials and escalations
-- Latest researcher report
+- Zone researcher report
 
 **Analysis:**
 - Identify recurring errors or failures
 - Detect guardrail patterns suggesting misconfiguration
-- Evaluate researcher suggestions against PAI principles
 - Check for skill or zone configuration issues
 - Assess resource usage and performance
 
-**Output:** Health report saved to ~/log/healer/{date}.md containing:
-- System health summary
+**Output:** ~/log/{zone}/health/{date}.md containing:
+- Zone health summary
 - Issues identified with severity
 - Proposed fixes with dry run previews
-- Researcher suggestions evaluated (accept/reject with reasoning)
 - Alignment check against PAI principles
 
-**Scope:** Read-only for analysis. Any proposed changes are written as dry run previews requiring human approval before execution.
+**Scope:** Read-only for analysis. Proposed changes require human approval.
 
-**Schedule:** Daily, after researcher completes.
+#### Grader
 
-### Agent Interaction
+Runs daily per zone to evaluate response quality and skill effectiveness.
 
-The healer consumes researcher output but does not act autonomously on suggestions. Both agents produce reports. A human reviews the reports and approves specific actions. This maintains the guardrail principle: destructive or system-modifying actions require explicit approval.
+**Goal:** Review session transcripts, grade response quality, identify skill improvements.
 
-**Workflow:**
-1. Researcher runs, produces ~/log/researcher/{date}.md
-2. Healer runs, reads researcher report and system logs
-3. Healer produces ~/log/healer/{date}.md with proposed actions
-4. Human reviews healer report
-5. Human approves specific proposals
+**Inputs:**
+- Zone session transcripts
+- Model responses and outcomes
+- Skill invocations and results
+
+**Analysis:**
+- Score responses on accuracy, helpfulness, efficiency
+- Identify weak skills or prompts
+- Detect patterns in good vs poor responses
+- Track quality trends over time
+
+**Output:** ~/log/{zone}/quality/{date}.md containing:
+- Quality scores and trends
+- Skill effectiveness ratings
+- Suggested skill refinements
+- Prompt improvement recommendations
+
+**Scope:** Read-only. Evaluates and reports. Skill changes require human approval.
+
+### Agent Schedule
+
+```
+03:00  Global Researcher (external)
+04:00  Per-zone Researcher (internal) - all zones
+05:00  Per-zone Healer - all zones
+06:00  Per-zone Grader - all zones
+```
+
+### Workflow
+
+1. Global researcher scans ecosystem → ~/log/research/{date}.md
+2. Per-zone researcher indexes zone + reads global research → ~/log/{zone}/knowledge/{date}.md
+3. Per-zone healer reviews zone health → ~/log/{zone}/health/{date}.md
+4. Per-zone grader evaluates quality → ~/log/{zone}/quality/{date}.md
+5. Human reviews reports, approves specific actions
 6. Approved changes execute with full logging
 
-**Self-Improvement Loop:**
+### Self-Improvement Loop
+
 ```
-OBSERVE: Researcher scans ecosystem, Healer scans logs
-THINK: Healer evaluates findings against principles
-PLAN: Healer proposes specific changes
-BUILD: Dry run previews generated
+OBSERVE: Global researcher scans ecosystem
+         Per-zone researcher indexes zone work
+THINK:   Healer evaluates health against principles
+         Grader evaluates quality against standards
+PLAN:    Healer proposes fixes
+         Grader proposes skill improvements
+BUILD:   Dry run previews generated
 EXECUTE: Human-approved changes only
-VERIFY: Next day's healer checks if changes improved system
-LEARN: Patterns added to researcher/healer skills
+VERIFY:  Next day's agents check if changes improved system
+LEARN:   Patterns refined, skills updated
 ```
 
-This implements PAI principle #10 (Self-Updating Systems) while respecting guardrails and human oversight.
+This implements PAI principle #10 (Self-Updating Systems) while respecting guardrails and human oversight. Knowledge stays local. External research is shared. Zone isolation is maintained.
