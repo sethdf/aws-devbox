@@ -283,6 +283,86 @@ Structured self-knowledge that agents reference for context about you. Based on 
 
 Agents read TELOS once at session start. Zone config can override or extend for context-specific values.
 
+## Sources
+
+Tracks upstream dependencies for automatic update detection. The Researcher (external) scans for updates. The Updater agent applies them with approval.
+
+**Source Types:**
+
+| Type | Examples | Check Method |
+|------|----------|--------------|
+| GitHub repos | TELOS, Fabric, PAI | Compare local vs remote HEAD |
+| System packages | apt, brew | Package manager check |
+| Language packages | pip, npm, cargo | Lockfile vs registry |
+| Skills | SkillsMP cache | Version comparison |
+| Tools | LiteLLM, CLIProxyAPI | Release tags |
+
+**Configuration:**
+
+```yaml
+# ~/.config/sources.yaml
+repos:
+  telos:
+    url: github.com/danielmiessler/telos
+    path: ~/.config/telos
+    branch: main
+  fabric:
+    url: github.com/danielmiessler/fabric
+    path: ~/.cache/fabric
+    branch: main
+  pai:
+    url: github.com/danielmiessler/Personal_AI_Infrastructure
+    path: ~/.cache/pai
+    branch: main
+
+packages:
+  system: true      # Check apt/brew
+  pip: true         # Check Python packages
+  npm: false        # Skip Node packages
+
+skills:
+  auto_check: true  # Check SkillsMP for updates
+```
+
+**Updater Agent:**
+
+Scheduled agent that applies updates. Runs after Researcher (external) reports available updates.
+
+```yaml
+name: updater
+purpose: Apply system and dependency updates safely
+
+skills:
+  - check-updates
+  - apply-update
+  - rollback
+meta_skills:
+  - chain
+
+personality:
+  tone: terse
+  verbosity: minimal
+  risk_tolerance: conservative
+
+scope: reversible  # Can modify but changes are rollback-able
+
+trigger:
+  event: researcher-external-complete
+```
+
+**Workflow:**
+1. Researcher (external) detects updates → writes to `~/log/updates-available.md`
+2. Updater agent reads available updates
+3. For each update: dry run → report impact → await approval
+4. Apply approved updates
+5. Verify success, rollback on failure
+
+**Scope Classification:**
+- GitHub repos: reversible (git reset)
+- System packages: reversible (package manager rollback)
+- Skills: reversible (version pinning)
+- Breaking changes: destructive (require explicit approval)
+
 ## Principles
 
 Derived from PAI's 15 founding principles:
@@ -595,6 +675,7 @@ trigger:
 | researcher-internal | Index zone knowledge | read-logs, index, categorize, chain | formal, thorough, reactive | read-only |
 | healer | Maintain system health | analyze-errors, diagnose, propose-fix, refine | terse, minimal, conservative | read-only |
 | grader | Evaluate quality | evaluate, score, compare, swarm | formal, balanced, assert | read-only |
+| updater | Apply updates safely | check-updates, apply-update, rollback, chain | terse, minimal, conservative | reversible |
 | assistant | Interactive help | context-dependent | conversational, balanced, proactive | zone-dependent |
 
 Custom agents extend or override these archetypes with zone-specific configuration.
