@@ -98,6 +98,35 @@ You are an expert content summarizer...
 
 **Tool Permissions** - The allowed-tools field lists tools the skill may use. Tools not listed are blocked. This provides defense in depth beyond scope classification.
 
+## Meta-Skills
+
+Some skills orchestrate other skills rather than performing direct work.
+
+### Swarm
+
+Runs a skill in parallel across multiple inputs, then synthesizes results. Uses LiteLLM's batch_completion for parallel execution.
+
+**Use cases:**
+- Research multiple topics simultaneously
+- Compare multiple options
+- Multi-source verification
+- Parallel data gathering
+
+**How it works:**
+1. Receive base skill and list of inputs
+2. Run base skill against each input in parallel
+3. Collect all results
+4. Synthesize into unified output
+
+**Example:**
+```
+swarm --skill researcher --inputs "OpenAI,Anthropic,Google,Meta,Mistral"
+```
+
+Spawns 5 parallel researcher invocations, each targeting one company. Results are synthesized into a single comparative report.
+
+**Scope:** Inherits from base skill. If base skill is read-only, swarm is read-only.
+
 ## Skill Sources
 
 The system draws from established skill libraries rather than reinventing prompts. Community-maintained and vendor-published skills provide tested, refined patterns.
