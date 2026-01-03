@@ -52,7 +52,7 @@ A single call can query Gemini through your Google subscription, Claude through 
 
 ## Skill Format
 
-Adopts the Agent Skills open standard from agentskills.io with Fabric pattern conventions for the body.
+Adopts the Agent Skills open standard from agentskills.io with Fabric pattern conventions for the body. Skills define capability only (WHAT). Personality (HOW) is set at zone or agent level, not in skills.
 
 **Directory Structure:**
 ```
@@ -352,6 +352,11 @@ Corporate development work for Acme Corp.
 - Fast: claude-3-haiku
 - Code: claude-3-opus
 
+## Personality
+- tone: terse
+- verbosity: minimal
+- initiative: reactive
+
 ## Allowed Skills
 @imports/standard-skills.md
 
@@ -516,7 +521,7 @@ An agent is defined by six components that together determine its identity and b
 
 **Skills** - What the agent can do. The set of skills available for the agent to invoke. Skills define capability boundaries.
 
-**Personality** - How the agent communicates and behaves. Affects output style without changing capability.
+**Personality** - How the agent communicates and behaves. Inherited from zone by default. Agents override only when needed.
 
 **Scope** - What the agent is allowed to do. Guardrail classification that constrains actions. Read-only agents cannot modify state.
 
