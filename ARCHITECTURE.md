@@ -506,6 +506,78 @@ Following "Code Before Prompts," logging leverages LiteLLM's built-in observabil
 
 **Sensitive Data** - Credentials and secrets are never logged. Input content can be hashed instead of stored verbatim when privacy is required. LiteLLM supports redaction for API keys. Zone configuration determines logging verbosity.
 
+## Agent Definition
+
+An agent is defined by six components that together determine its identity and behavior.
+
+### Components
+
+**Purpose** - Why the agent exists. The goal it is trying to accomplish. This is the north star that guides all agent behavior and decisions.
+
+**Skills** - What the agent can do. The set of skills available for the agent to invoke. Skills define capability boundaries.
+
+**Personality** - How the agent communicates and behaves. Affects output style without changing capability.
+
+**Scope** - What the agent is allowed to do. Guardrail classification that constrains actions. Read-only agents cannot modify state.
+
+**Context** - What the agent knows. Zone assignment, session history, and available information. Determines what data the agent can access.
+
+**Trigger** - When the agent runs. Schedule (cron), event (file change, webhook), or manual invocation.
+
+### Personality Attributes
+
+| Attribute | Options | Description |
+|-----------|---------|-------------|
+| tone | formal, conversational, terse, friendly | Communication style |
+| verbosity | minimal, balanced, thorough, exhaustive | Output length preference |
+| risk_tolerance | conservative, balanced, aggressive | Willingness to suggest changes |
+| initiative | reactive, proactive | Wait for instructions vs. suggest next steps |
+| confidence | hedge, state_levels, assert | How certainty is expressed |
+
+### Agent Definition Format
+
+```yaml
+name: researcher-external
+purpose: Scan ecosystem for relevant updates and opportunities
+
+skills:
+  - web-search
+  - summarize
+  - extract-insights
+meta_skills:
+  - swarm
+
+personality:
+  tone: formal
+  verbosity: thorough
+  risk_tolerance: conservative
+  initiative: proactive
+  confidence: state_levels
+
+scope: read-only
+
+context:
+  zone: global
+  access:
+    - external-sources
+    - global-knowledge-base
+
+trigger:
+  schedule: "0 3 * * *"  # 3am daily
+```
+
+### Built-in Agent Archetypes
+
+| Archetype | Purpose | Key Skills | Personality | Scope |
+|-----------|---------|------------|-------------|-------|
+| researcher-external | Find ecosystem updates | web-search, summarize, swarm | formal, thorough, proactive | read-only |
+| researcher-internal | Index zone knowledge | read-logs, index, categorize, chain | formal, thorough, reactive | read-only |
+| healer | Maintain system health | analyze-errors, diagnose, propose-fix, refine | terse, minimal, conservative | read-only |
+| grader | Evaluate quality | evaluate, score, compare, swarm | formal, balanced, assert | read-only |
+| assistant | Interactive help | context-dependent | conversational, balanced, proactive | zone-dependent |
+
+Custom agents extend or override these archetypes with zone-specific configuration.
+
 ## Scheduled Agents
 
 Agents run on a daily schedule via cron. Global agents run once. Per-zone agents run for each configured zone. All operate within guardrails and produce reports for human review before any changes are applied.
